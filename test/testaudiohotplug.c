@@ -92,7 +92,7 @@ static void iteration(void)
                     SDL_Log("Opened '%s' as %u\n", name, (unsigned int) which);
                     /* !!! FIXME: laziness, this used to loop the audio, but we'll just play it once for now on each connect. */
                     AssertSuccess(SDL_PutAudioStreamData(stream, sound, soundlen));
-                    AssertSuccess(SDL_FlushAudioStream(stream));
+                    SDL_FlushAudioStream(stream);
                     AssertSuccess(SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(stream)));
                     /* !!! FIXME: this is leaking the stream for now. We'll wire it up to a dictionary or whatever later. */
                 }

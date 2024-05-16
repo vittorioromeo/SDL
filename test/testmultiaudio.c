@@ -71,7 +71,7 @@ test_multi_audio(SDL_AudioDeviceID *devices, int devcount)
         } else {
             AssertSuccess(SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(stream)));
             AssertSuccess(SDL_PutAudioStreamData(stream, sound, soundlen));
-            AssertSuccess(SDL_FlushAudioStream(stream));
+            SDL_FlushAudioStream(stream);
 #ifdef SDL_PLATFORM_EMSCRIPTEN
             emscripten_set_main_loop(loop, 0, 1);
 #else
@@ -103,7 +103,7 @@ test_multi_audio(SDL_AudioDeviceID *devices, int devcount)
                 SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Audio stream creation failed for device %d of %d: %s", i, devcount, SDL_GetError());
             } else {
                 AssertSuccess(SDL_PutAudioStreamData(streams[i], sound, soundlen));
-                AssertSuccess(SDL_FlushAudioStream(streams[i]));
+                SDL_FlushAudioStream(streams[i]);
             }
         }
 

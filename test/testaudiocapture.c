@@ -161,13 +161,13 @@ int SDL_AppEvent(void *appstate, const SDL_Event *event)
     } else if (event->type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
         if (event->button.button == 1) {
             AssertSuccess(SDL_PauseAudioDevice(SDL_GetAudioStreamDevice(stream_out)));
-            AssertSuccess(SDL_FlushAudioStream(stream_out));  /* so no samples are held back for resampling purposes. */
+            SDL_FlushAudioStream(stream_out);  /* so no samples are held back for resampling purposes. */
             AssertSuccess(SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(stream_in)));
         }
     } else if (event->type == SDL_EVENT_MOUSE_BUTTON_UP) {
         if (event->button.button == 1) {
             AssertSuccess(SDL_PauseAudioDevice(SDL_GetAudioStreamDevice(stream_in)));
-            AssertSuccess(SDL_FlushAudioStream(stream_in));  /* so no samples are held back for resampling purposes. */
+            SDL_FlushAudioStream(stream_in);  /* so no samples are held back for resampling purposes. */
             AssertSuccess(SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(stream_out)));
         }
     }

@@ -1036,8 +1036,7 @@ extern DECLSPEC int SDLCALL SDL_GetAudioStreamQueued(SDL_AudioStream *stream);
  * input, so the complete output becomes available.
  *
  * \param stream The audio stream to flush
- * \returns 0 on success or a negative error code on failure; call
- *          SDL_GetError() for more information.
+ * \returns 0 on success, -1 on error. This only fails if `stream` is NULL.
  *
  * \threadsafety It is safe to call this function from any thread.
  *
@@ -1045,7 +1044,7 @@ extern DECLSPEC int SDLCALL SDL_GetAudioStreamQueued(SDL_AudioStream *stream);
  *
  * \sa SDL_PutAudioStreamData
  */
-extern SDL_NODISCARD DECLSPEC int SDLCALL SDL_FlushAudioStream(SDL_AudioStream *stream);
+extern DECLSPEC int SDLCALL SDL_FlushAudioStream(SDL_AudioStream *stream);
 
 /**
  * Clear any pending data in the stream.
@@ -1054,8 +1053,7 @@ extern SDL_NODISCARD DECLSPEC int SDLCALL SDL_FlushAudioStream(SDL_AudioStream *
  * stream until more is added.
  *
  * \param stream The audio stream to clear
- * \returns 0 on success or a negative error code on failure; call
- *          SDL_GetError() for more information.
+ * \returns 0 on success, -1 on error. This only fails if `stream` is NULL.
  *
  * \threadsafety It is safe to call this function from any thread.
  *
@@ -1066,7 +1064,7 @@ extern SDL_NODISCARD DECLSPEC int SDLCALL SDL_FlushAudioStream(SDL_AudioStream *
  * \sa SDL_GetAudioStreamQueued
  * \sa SDL_PutAudioStreamData
  */
-extern SDL_NODISCARD DECLSPEC int SDLCALL SDL_ClearAudioStream(SDL_AudioStream *stream);
+extern DECLSPEC int SDLCALL SDL_ClearAudioStream(SDL_AudioStream *stream);
 
 /**
  * Lock an audio stream for serialized access.
@@ -1085,8 +1083,7 @@ extern SDL_NODISCARD DECLSPEC int SDLCALL SDL_ClearAudioStream(SDL_AudioStream *
  * all the same attributes (recursive locks are allowed, etc).
  *
  * \param stream The audio stream to lock.
- * \returns 0 on success or a negative error code on failure; call
- *          SDL_GetError() for more information.
+ * \returns 0 on success, -1 on error. This only fails if `stream` is NULL.
  *
  * \threadsafety It is safe to call this function from any thread.
  *
@@ -1094,7 +1091,7 @@ extern SDL_NODISCARD DECLSPEC int SDLCALL SDL_ClearAudioStream(SDL_AudioStream *
  *
  * \sa SDL_UnlockAudioStream
  */
-extern SDL_NODISCARD DECLSPEC int SDLCALL SDL_LockAudioStream(SDL_AudioStream *stream);
+extern DECLSPEC int SDLCALL SDL_LockAudioStream(SDL_AudioStream *stream);
 
 
 /**
@@ -1103,8 +1100,7 @@ extern SDL_NODISCARD DECLSPEC int SDLCALL SDL_LockAudioStream(SDL_AudioStream *s
  * This unlocks an audio stream after a call to SDL_LockAudioStream.
  *
  * \param stream The audio stream to unlock.
- * \returns 0 on success or a negative error code on failure; call
- *          SDL_GetError() for more information.
+ * \returns 0 on success, -1 on error. This only fails if `stream` is NULL.
  *
  * \threadsafety You should only call this from the same thread that
  *               previously called SDL_LockAudioStream.
@@ -1113,7 +1109,7 @@ extern SDL_NODISCARD DECLSPEC int SDLCALL SDL_LockAudioStream(SDL_AudioStream *s
  *
  * \sa SDL_LockAudioStream
  */
-extern SDL_NODISCARD DECLSPEC int SDLCALL SDL_UnlockAudioStream(SDL_AudioStream *stream);
+extern DECLSPEC int SDLCALL SDL_UnlockAudioStream(SDL_AudioStream *stream);
 
 /**
  * A callback that fires when data passes through an SDL_AudioStream.

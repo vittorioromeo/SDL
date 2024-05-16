@@ -543,7 +543,7 @@ static void StreamThing_ondrag(Thing *thing, int button, float x, float y)
         if (thing->line_connected_to) {
             SDL_UnbindAudioStream(thing->data.stream.stream); /* unbind from current device */
             if (thing->line_connected_to->what == THING_LOGDEV_CAPTURE) {
-                AssertSuccess(SDL_FlushAudioStream(thing->data.stream.stream));
+                SDL_FlushAudioStream(thing->data.stream.stream);
             }
             thing->line_connected_to = NULL;
         }
@@ -561,7 +561,7 @@ static void StreamThing_ondrop(Thing *thing, int button, float x, float y)
             if (thing->line_connected_to) {
                 SDL_UnbindAudioStream(thing->data.stream.stream); /* unbind from current device */
                 if (thing->line_connected_to->what == THING_LOGDEV_CAPTURE) {
-                    AssertSuccess(SDL_FlushAudioStream(thing->data.stream.stream));
+                    SDL_FlushAudioStream(thing->data.stream.stream);
                 }
             }
 
@@ -604,7 +604,7 @@ static Thing *CreateStreamThing(const SDL_AudioSpec *spec, const Uint8 *buf, con
         thing->data.stream.stream = SDL_CreateAudioStream(spec, spec);
         if (buf && buflen) {
             AssertSuccess(SDL_PutAudioStreamData(thing->data.stream.stream, buf, (int) buflen));
-            AssertSuccess(SDL_FlushAudioStream(thing->data.stream.stream));
+            SDL_FlushAudioStream(thing->data.stream.stream);
             thing->data.stream.total_bytes = SDL_GetAudioStreamAvailable(thing->data.stream.stream);
         }
         thing->ontick = StreamThing_ontick;

@@ -1138,6 +1138,11 @@ static void HandleVideoFrame(AVFrame *frame, double pts)
     FinishFrameRendering(frame);
 }
 
+static void AssertSuccess(int rc)
+{
+    SDL_assert(rc == 0);
+}
+
 static AVCodecContext *OpenAudioStream(AVFormatContext *ic, int stream, const AVCodec *codec)
 {
     AVStream *st = ic->streams[stream];
@@ -1294,11 +1299,6 @@ static void av_log_callback(void* avcl, int level, const char *fmt, va_list vl)
 static void print_usage(SDLTest_CommonState *state, const char *argv0) {
     static const char *options[] = { "[--verbose]", "[--sprites N]", "[--audio-codec codec]", "[--video-codec codec]", "[--software]", "video_file", NULL };
     SDLTest_CommonLogUsage(state, argv0, options);
-}
-
-static void AssertSuccess(int rc)
-{
-    SDL_assert(rc == 0);
 }
 
 int main(int argc, char *argv[])
@@ -1555,7 +1555,7 @@ int main(int argc, char *argv[])
             }
             if (flushing) {
                 /* Let SDL know we're done sending audio */
-                AssertSuccess(SDL_FlushAudioStream(audio));
+                SDL_FlushAudioStream(audio);
             }
         }
         if (video_context) {
