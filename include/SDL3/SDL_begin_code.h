@@ -179,7 +179,7 @@
 #define SDL_NODISCARD [[nodiscard]]
 #elif ( (defined(__GNUC__) && (__GNUC__ >= 4)) || defined(__clang__) )
 #define SDL_NODISCARD __attribute__((warn_unused_result))
-#elif defined(_MSC_VER)
+#elif defined(_MSC_VER) && (_MSC_VER >= 1700)
 #define SDL_NODISCARD _Check_return_
 #else
 #define SDL_NODISCARD

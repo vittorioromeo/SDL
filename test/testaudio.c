@@ -532,13 +532,18 @@ static void StreamThing_ontick(Thing *thing, Uint64 now)
     }
 }
 
+static void AssertSuccess(int rc)
+{
+    SDL_assert(rc == 0);
+}
+
 static void StreamThing_ondrag(Thing *thing, int button, float x, float y)
 {
     if (button == SDL_BUTTON_RIGHT) {  /* this is kinda hacky, but use this to disconnect from a playing source. */
         if (thing->line_connected_to) {
             SDL_UnbindAudioStream(thing->data.stream.stream); /* unbind from current device */
             if (thing->line_connected_to->what == THING_LOGDEV_CAPTURE) {
-                SDL_FlushAudioStream(thing->data.stream.stream);
+                AssertSuccess(SDL_FlushAudioStream(thing->data.stream.stream));
             }
             thing->line_connected_to = NULL;
         }
@@ -556,11 +561,11 @@ static void StreamThing_ondrop(Thing *thing, int button, float x, float y)
             if (thing->line_connected_to) {
                 SDL_UnbindAudioStream(thing->data.stream.stream); /* unbind from current device */
                 if (thing->line_connected_to->what == THING_LOGDEV_CAPTURE) {
-                    SDL_FlushAudioStream(thing->data.stream.stream);
+                    AssertSuccess(SDL_FlushAudioStream(thing->data.stream.stream));
                 }
             }
 
-            SDL_BindAudioStream(droppable_highlighted_thing->data.logdev.devid, thing->data.stream.stream); /* bind to new device! */
+            AssertSuccess(SDL_BindAudioStream(droppable_highlighted_thing->data.logdev.devid, thing->data.stream.stream)); /* bind to new device! */
             thing->data.stream.total_bytes = SDL_GetAudioStreamAvailable(thing->data.stream.stream);
             thing->progress = 0.0f;  /* ontick will adjust this if we're on an output device.*/
             thing->data.stream.next_level_update = SDL_GetTicks() + 100;
@@ -598,8 +603,8 @@ static Thing *CreateStreamThing(const SDL_AudioSpec *spec, const Uint8 *buf, con
         SDL_Log("Adding audio stream for %s", fname ? fname : "(null)");
         thing->data.stream.stream = SDL_CreateAudioStream(spec, spec);
         if (buf && buflen) {
-            SDL_PutAudioStreamData(thing->data.stream.stream, buf, (int) buflen);
-            SDL_FlushAudioStream(thing->data.stream.stream);
+            AssertSuccess(SDL_PutAudioStreamData(thing->data.stream.stream, buf, (int) buflen));
+            AssertSuccess(SDL_FlushAudioStream(thing->data.stream.stream));
             thing->data.stream.total_bytes = SDL_GetAudioStreamAvailable(thing->data.stream.stream);
         }
         thing->ontick = StreamThing_ontick;
@@ -729,7 +734,7 @@ static void DeviceThing_ondrag(Thing *thing, int button, float x, float y)
         dragging_thing = CreateStreamThing(&thing->data.logdev.spec, NULL, 0, NULL, x, y);
         if (dragging_thing) {
             dragging_thing->data.stream.next_level_update = SDL_GetTicks() + 100;
-            SDL_BindAudioStream(thing->data.logdev.devid, dragging_thing->data.stream.stream); /* bind to new device! */
+            AssertSuccess(SDL_BindAudioStream(thing->data.logdev.devid, dragging_thing->data.stream.stream)); /* bind to new device! */
             dragging_thing->line_connected_to = thing;
         }
     } else if (button == SDL_BUTTON_RIGHT) {  /* drag out a new logical device. */
@@ -743,7 +748,7 @@ static void SetLogicalDeviceTitlebar(Thing *thing)
 {
     SDL_AudioSpec *spec = &thing->data.logdev.spec;
     int frames = 0;
-    SDL_GetAudioDeviceFormat(thing->data.logdev.devid, spec, &frames);
+    AssertSuccess(SDL_GetAudioDeviceFormat(thing->data.logdev.devid, spec, &frames));
     SDL_free(thing->titlebar);
     SDL_asprintf(&thing->titlebar, "Logical device #%u (%s, %s, %s, %uHz, %d frames)", (unsigned int) thing->data.logdev.devid, thing->data.logdev.iscapture ? "CAPTURE" : "OUTPUT", AudioFmtToString(spec->format), AudioChansToStr(spec->channels), (unsigned int) spec->freq, frames);
 }
@@ -842,13 +847,13 @@ static void LogicalDeviceThing_ontick(Thing *thing, Uint64 now)
     if (thing->data.logdev.visualizer_enabled != ismousedover) {
         thing->data.logdev.visualizer_enabled = ismousedover;
         if (!ismousedover) {
-            SDL_SetAudioPostmixCallback(thing->data.logdev.devid, NULL, NULL);
+            AssertSuccess(SDL_SetAudioPostmixCallback(thing->data.logdev.devid, NULL, NULL));
         } else {
             if (thing->data.logdev.postmix_buffer) {
                 SDL_memset(thing->data.logdev.postmix_buffer, '\0', thing->data.logdev.postmix_buflen);
             }
             SDL_AtomicSet(&thing->data.logdev.postmix_updated, 1);  /* so this will at least clear the texture later. */
-            SDL_SetAudioPostmixCallback(thing->data.logdev.devid, PostmixCallback, thing);
+            AssertSuccess(SDL_SetAudioPostmixCallback(thing->data.logdev.devid, PostmixCallback, thing));
         }
     }
 }
@@ -920,7 +925,7 @@ static void SetPhysicalDeviceTitlebar(Thing *thing)
 {
     int frames = 0;
     SDL_AudioSpec *spec = &thing->data.physdev.spec;
-    SDL_GetAudioDeviceFormat(thing->data.physdev.devid, spec, &frames);
+    AssertSuccess(SDL_GetAudioDeviceFormat(thing->data.physdev.devid, spec, &frames));
     SDL_free(thing->titlebar);
     if (thing->data.physdev.devid == SDL_AUDIO_DEVICE_DEFAULT_CAPTURE) {
         SDL_asprintf(&thing->titlebar, "Default system device (CAPTURE, %s, %s, %uHz, %d frames)", AudioFmtToString(spec->format), AudioChansToStr(spec->channels), (unsigned int) spec->freq, frames);
@@ -1246,4 +1251,3 @@ void SDL_AppQuit(void *appstate)
     DestroyTexture(soundboard_levels_texture);
     SDLTest_CommonQuit(state);
 }
-

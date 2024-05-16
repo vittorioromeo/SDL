@@ -21,6 +21,11 @@ static SDL_AudioStream *stream_in = NULL;
 static SDL_AudioStream *stream_out = NULL;
 static SDLTest_CommonState *state = NULL;
 
+static void AssertSuccess(int rc)
+{
+    SDL_assert(rc == 0);
+}
+
 int SDL_AppInit(void **appstate, int argc, char **argv)
 {
     SDL_AudioDeviceID *devices;
@@ -106,8 +111,8 @@ int SDL_AppInit(void **appstate, int argc, char **argv)
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't open an audio device for playback: %s!\n", SDL_GetError());
         return -1;
     }
-    SDL_PauseAudioDevice(device);
-    SDL_GetAudioDeviceFormat(device, &outspec, NULL);
+    AssertSuccess(SDL_PauseAudioDevice(device));
+    AssertSuccess(SDL_GetAudioDeviceFormat(device, &outspec, NULL));
     stream_out = SDL_CreateAudioStream(&outspec, &outspec);
     if (!stream_out) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create an audio stream for playback: %s!\n", SDL_GetError());
@@ -127,8 +132,8 @@ int SDL_AppInit(void **appstate, int argc, char **argv)
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't open an audio device for capture: %s!\n", SDL_GetError());
         return -1;
     }
-    SDL_PauseAudioDevice(device);
-    SDL_GetAudioDeviceFormat(device, &inspec, NULL);
+    AssertSuccess(SDL_PauseAudioDevice(device));
+    AssertSuccess(SDL_GetAudioDeviceFormat(device, &inspec, NULL));
     stream_in = SDL_CreateAudioStream(&inspec, &inspec);
     if (!stream_in) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create an audio stream for capture: %s!\n", SDL_GetError());
@@ -138,7 +143,7 @@ int SDL_AppInit(void **appstate, int argc, char **argv)
         return -1;
     }
 
-    SDL_SetAudioStreamFormat(stream_in, NULL, &outspec);  /* make sure we output at the playback format. */
+    AssertSuccess(SDL_SetAudioStreamFormat(stream_in, NULL, &outspec));  /* make sure we output at the playback format. */
 
     SDL_Log("Ready! Hold down mouse or finger to record!\n");
 
@@ -155,15 +160,15 @@ int SDL_AppEvent(void *appstate, const SDL_Event *event)
         }
     } else if (event->type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
         if (event->button.button == 1) {
-            SDL_PauseAudioDevice(SDL_GetAudioStreamDevice(stream_out));
-            SDL_FlushAudioStream(stream_out);  /* so no samples are held back for resampling purposes. */
-            SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(stream_in));
+            AssertSuccess(SDL_PauseAudioDevice(SDL_GetAudioStreamDevice(stream_out)));
+            AssertSuccess(SDL_FlushAudioStream(stream_out));  /* so no samples are held back for resampling purposes. */
+            AssertSuccess(SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(stream_in)));
         }
     } else if (event->type == SDL_EVENT_MOUSE_BUTTON_UP) {
         if (event->button.button == 1) {
-            SDL_PauseAudioDevice(SDL_GetAudioStreamDevice(stream_in));
-            SDL_FlushAudioStream(stream_in);  /* so no samples are held back for resampling purposes. */
-            SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(stream_out));
+            AssertSuccess(SDL_PauseAudioDevice(SDL_GetAudioStreamDevice(stream_in)));
+            AssertSuccess(SDL_FlushAudioStream(stream_in));  /* so no samples are held back for resampling purposes. */
+            AssertSuccess(SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(stream_out)));
         }
     }
     return 0;  /* keep going. */
@@ -209,5 +214,3 @@ void SDL_AppQuit(void *appstate)
     SDLTest_CommonDestroyState(state);
     SDL_Quit();
 }
-
-

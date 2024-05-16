@@ -2152,7 +2152,10 @@ void SDL_DefaultAudioDeviceChanged(SDL_AudioDevice *new_default_device)
                 RefPhysicalAudioDevice(new_default_device);
                 UnrefPhysicalAudioDevice(current_default_device);
 
-                SDL_SetAudioPostmixCallback(logdev->instance_id, logdev->postmix, logdev->postmix_userdata);
+                int rc = SDL_SetAudioPostmixCallback(logdev->instance_id, logdev->postmix, logdev->postmix_userdata);
+
+                /* FIXME: The above function call can fail, should the error be propagated or ignored? */
+                (void) rc;
 
                 SDL_PendingAudioDeviceEvent *p;
 
@@ -2322,4 +2325,3 @@ void SDL_UpdateAudio(void)
         SDL_free(i);
     }
 }
-
