@@ -1171,7 +1171,7 @@ static AVCodecContext *OpenAudioStream(AVFormatContext *ic, int stream, const AV
     SDL_AudioSpec spec = { SDL_AUDIO_F32, codecpar->ch_layout.nb_channels, codecpar->sample_rate };
     audio = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_OUTPUT, &spec, NULL, NULL);
     if (audio) {
-        SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(audio));
+        AssertSuccess(SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(audio)));
     } else {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't open audio: %s", SDL_GetError());
     }
@@ -1234,7 +1234,7 @@ static void InterleaveAudio(AVFrame *frame, const SDL_AudioSpec *spec)
             dst += framesize;
         }
     }
-    SDL_PutAudioStreamData(audio, data, frame->nb_samples * framesize);
+    AssertSuccess(SDL_PutAudioStreamData(audio, data, frame->nb_samples * framesize));
     SDL_free(data);
 }
 
@@ -1242,12 +1242,12 @@ static void HandleAudioFrame(AVFrame *frame)
 {
     if (audio) {
         SDL_AudioSpec spec = { GetAudioFormat(frame->format), frame->ch_layout.nb_channels, frame->sample_rate };
-        SDL_SetAudioStreamFormat(audio, &spec, NULL);
+        AssertSuccess(SDL_SetAudioStreamFormat(audio, &spec, NULL));
 
         if (frame->ch_layout.nb_channels > 1 && IsPlanarAudioFormat(frame->format)) {
             InterleaveAudio(frame, &spec);
         } else {
-            SDL_PutAudioStreamData(audio, frame->data[0], frame->nb_samples * SDL_AUDIO_FRAMESIZE(spec));
+            AssertSuccess(SDL_PutAudioStreamData(audio, frame->data[0], frame->nb_samples * SDL_AUDIO_FRAMESIZE(spec)));
         }
     }
 }
@@ -1294,6 +1294,11 @@ static void av_log_callback(void* avcl, int level, const char *fmt, va_list vl)
 static void print_usage(SDLTest_CommonState *state, const char *argv0) {
     static const char *options[] = { "[--verbose]", "[--sprites N]", "[--audio-codec codec]", "[--video-codec codec]", "[--software]", "video_file", NULL };
     SDLTest_CommonLogUsage(state, argv0, options);
+}
+
+static void AssertSuccess(int rc)
+{
+    SDL_assert(rc == 0);
 }
 
 int main(int argc, char *argv[])
@@ -1550,7 +1555,7 @@ int main(int argc, char *argv[])
             }
             if (flushing) {
                 /* Let SDL know we're done sending audio */
-                SDL_FlushAudioStream(audio);
+                AssertSuccess(SDL_FlushAudioStream(audio));
             }
         }
         if (video_context) {
