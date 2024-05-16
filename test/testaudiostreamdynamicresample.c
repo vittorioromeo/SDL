@@ -133,6 +133,11 @@ static void queue_audio()
     }
 }
 
+static void AssertSuccess(int rc)
+{
+    SDL_assert(rc == 0);
+}
+
 static void skip_audio(float amount)
 {
     float speed;
@@ -141,12 +146,12 @@ static void skip_audio(float amount)
     int retval = 0;
     void* buf = NULL;
 
-    SDL_LockAudioStream(stream);
+    AssertSuccess(SDL_LockAudioStream(stream));
 
     speed = SDL_GetAudioStreamFrequencyRatio(stream);
-    SDL_GetAudioStreamFormat(stream, NULL, &dst_spec);
+    AssertSuccess(SDL_GetAudioStreamFormat(stream, NULL, &dst_spec));
 
-    SDL_SetAudioStreamFrequencyRatio(stream, 100.0f);
+    AssertSuccess(SDL_SetAudioStreamFrequencyRatio(stream, 100.0f));
 
     num_bytes = (int)(SDL_AUDIO_FRAMESIZE(dst_spec) * dst_spec.freq * ((speed * amount) / 100.0f));
     buf = SDL_malloc(num_bytes);
@@ -156,9 +161,9 @@ static void skip_audio(float amount)
         SDL_free(buf);
     }
 
-    SDL_SetAudioStreamFrequencyRatio(stream, speed);
+    AssertSuccess(SDL_SetAudioStreamFrequencyRatio(stream, speed));
 
-    SDL_UnlockAudioStream(stream);
+    AssertSuccess(SDL_UnlockAudioStream(stream));
 
     if (retval >= 0) {
         SDL_Log("Skipped %.2f seconds", amount);
@@ -221,16 +226,16 @@ static void loop(void)
             SDL_Keycode sym = e.key.keysym.sym;
             if (sym == SDLK_q) {
                 if (SDL_AudioDevicePaused(state->audio_id)) {
-                    SDL_ResumeAudioDevice(state->audio_id);
+                    AssertSuccess(SDL_ResumeAudioDevice(state->audio_id));
                 } else {
-                    SDL_PauseAudioDevice(state->audio_id);
+                    AssertSuccess(SDL_PauseAudioDevice(state->audio_id));
                 }
             } else if (sym == SDLK_w) {
                 auto_loop = !auto_loop;
             } else if (sym == SDLK_e) {
                 auto_flush = !auto_flush;
             } else if (sym == SDLK_a) {
-                SDL_ClearAudioStream(stream);
+                AssertSuccess(SDL_ClearAudioStream(stream));
                 SDL_Log("Cleared audio stream");
             } else if (sym == SDLK_s) {
                 queue_audio();
@@ -281,7 +286,7 @@ static void loop(void)
 
     if (sliders[0].changed) {
         sliders[0].changed = SDL_FALSE;
-        SDL_SetAudioStreamFrequencyRatio(stream, sliders[0].value);
+        AssertSuccess(SDL_SetAudioStreamFrequencyRatio(stream, sliders[0].value));
     }
 
     if (SDL_GetAudioStreamFormat(stream, &src_spec, &dst_spec) == 0) {
@@ -331,13 +336,13 @@ static void loop(void)
         draw_textf(rend, 0, draw_y, "Queued: %i bytes", queued_bytes);
         draw_y += FONT_LINE_HEIGHT;
 
-        SDL_LockAudioStream(stream);
+        AssertSuccess(SDL_LockAudioStream(stream));
 
         draw_textf(rend, 0, draw_y, "Get Callback: %i/%i bytes, %2i ms ago",
             last_get_amount_additional, last_get_amount_total, (int)(SDL_GetTicks() - last_get_callback));
         draw_y += FONT_LINE_HEIGHT;
 
-        SDL_UnlockAudioStream(stream);
+        AssertSuccess(SDL_UnlockAudioStream(stream));
 
         draw_y = state->window_h - FONT_LINE_HEIGHT * 3;
 
@@ -429,7 +434,7 @@ int main(int argc, char *argv[])
     stream = SDL_CreateAudioStream(&spec, &spec);
     SDL_SetAudioStreamGetCallback(stream, our_get_callback, NULL);
 
-    SDL_BindAudioStream(state->audio_id, stream);
+    AssertSuccess(SDL_BindAudioStream(state->audio_id, stream));
 
 #ifdef SDL_PLATFORM_EMSCRIPTEN
     emscripten_set_main_loop(loop, 0, 1);
@@ -445,4 +450,3 @@ int main(int argc, char *argv[])
     SDLTest_CommonQuit(state);
     return 0;
 }
-

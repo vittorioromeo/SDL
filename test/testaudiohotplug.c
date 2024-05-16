@@ -57,6 +57,11 @@ static const char *devtypestr(int iscapture)
     return iscapture ? "capture" : "output";
 }
 
+static void AssertSuccess(int rc)
+{
+    SDL_assert(rc == 0);
+}
+
 static void iteration(void)
 {
     SDL_Event e;
@@ -86,9 +91,9 @@ static void iteration(void)
                 } else {
                     SDL_Log("Opened '%s' as %u\n", name, (unsigned int) which);
                     /* !!! FIXME: laziness, this used to loop the audio, but we'll just play it once for now on each connect. */
-                    SDL_PutAudioStreamData(stream, sound, soundlen);
-                    SDL_FlushAudioStream(stream);
-                    SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(stream));
+                    AssertSuccess(SDL_PutAudioStreamData(stream, sound, soundlen));
+                    AssertSuccess(SDL_FlushAudioStream(stream));
+                    AssertSuccess(SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(stream)));
                     /* !!! FIXME: this is leaking the stream for now. We'll wire it up to a dictionary or whatever later. */
                 }
             }

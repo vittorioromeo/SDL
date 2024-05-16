@@ -97,6 +97,11 @@ static SDL_bool is_lfe_channel(int channel_index, int channel_count)
     return (channel_count == 3 && channel_index == 2) || (channel_count >= 6 && channel_index == 3);
 }
 
+static void AssertSuccess(int rc)
+{
+    SDL_assert(rc == 0);
+}
+
 static void SDLCALL fill_buffer(void *userdata, SDL_AudioStream *stream, int len, int totallen)
 {
     const int samples = len / sizeof(Sint16);
@@ -139,7 +144,7 @@ static void SDLCALL fill_buffer(void *userdata, SDL_AudioStream *stream, int len
         }
     }
 
-    SDL_PutAudioStreamData(stream, buffer, samples * sizeof (Sint16));
+    AssertSuccess(SDL_PutAudioStreamData(stream, buffer, samples * sizeof (Sint16)));
 
     SDL_free(buffer);
 }
@@ -217,7 +222,7 @@ int main(int argc, char *argv[])
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL_OpenAudioDeviceStream() failed: %s\n", SDL_GetError());
             continue;
         }
-        SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(stream));
+        AssertSuccess(SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(stream)));
 
         for (j = 0; j < total_channels; j++) {
             const int sine_freq = is_lfe_channel(j, total_channels) ? LFE_SINE_FREQ_HZ : SINE_FREQ_HZ;

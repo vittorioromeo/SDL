@@ -42,6 +42,11 @@ static void loop(void)
 }
 #endif
 
+static void AssertSuccess(int rc)
+{
+    SDL_assert(rc == 0);
+}
+
 static void
 test_multi_audio(SDL_AudioDeviceID *devices, int devcount)
 {
@@ -64,9 +69,9 @@ test_multi_audio(SDL_AudioDeviceID *devices, int devcount)
         if ((stream = SDL_OpenAudioDeviceStream(devices[i], &spec, NULL, NULL)) == NULL) {
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Audio stream creation failed: %s", SDL_GetError());
         } else {
-            SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(stream));
-            SDL_PutAudioStreamData(stream, sound, soundlen);
-            SDL_FlushAudioStream(stream);
+            AssertSuccess(SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(stream)));
+            AssertSuccess(SDL_PutAudioStreamData(stream, sound, soundlen));
+            AssertSuccess(SDL_FlushAudioStream(stream));
 #ifdef SDL_PLATFORM_EMSCRIPTEN
             emscripten_set_main_loop(loop, 0, 1);
 #else
@@ -97,15 +102,15 @@ test_multi_audio(SDL_AudioDeviceID *devices, int devcount)
             if (streams[i] == NULL) {
                 SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Audio stream creation failed for device %d of %d: %s", i, devcount, SDL_GetError());
             } else {
-                SDL_PutAudioStreamData(streams[i], sound, soundlen);
-                SDL_FlushAudioStream(streams[i]);
+                AssertSuccess(SDL_PutAudioStreamData(streams[i], sound, soundlen));
+                AssertSuccess(SDL_FlushAudioStream(streams[i]));
             }
         }
 
         /* try to start all the devices about the same time. SDL does not guarantee sync across physical devices. */
         for (i = 0; i < devcount; i++) {
             if (streams[i]) {
-                SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(streams[i]));
+                AssertSuccess(SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(streams[i])));
             }
         }
 
@@ -203,4 +208,3 @@ int main(int argc, char **argv)
 
     return 0;
 }
-
