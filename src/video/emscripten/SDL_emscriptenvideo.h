@@ -54,6 +54,12 @@ struct SDL_WindowData
     bool mouse_focus_loss_pending;
 };
 
+struct SDL_VideoData
+{
+   SDL_PropertiesID window_map;
+   SDL_Window *mainWindow;
+};
+
 extern SDL_Window *Emscripten_fill_document_window;
 
 bool Emscripten_ShouldSetSwapInterval(int interval);

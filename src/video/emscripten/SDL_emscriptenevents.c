@@ -1141,10 +1141,23 @@ EM_JS_DEPS(dragndrop, "$writeArrayToMemory");
 static void Emscripten_set_drag_event_callbacks(SDL_WindowData *data)
 {
     MAIN_THREAD_EM_ASM({
-        var target = document.querySelector(UTF8ToString($1));
+        var id = UTF8ToString($1);
+        var target = document.querySelector(id);
         if (target) {
             var data = $0;
             var SDL3 = Module['SDL3'];
+
+            if (!SDL3['window_data']) {
+                SDL3['window_data'] = {};
+            }
+
+            var window_datas = SDL3['window_data'];
+
+            if (!window_datas[id]) {
+                window_datas[id] = {};
+            }
+
+            var window_data = window_datas[id];
 
             var makeDropEventCStruct = function(event) {
                 var ptr = 0;
@@ -1158,11 +1171,12 @@ static void Emscripten_set_drag_event_callbacks(SDL_WindowData *data)
                 return ptr;
             };
 
-            SDL3.eventHandlerDropDragover = function(event) {
+            window_data.eventHandlerDropDragover = function(event) {
                 event.preventDefault();
                 var d = makeDropEventCStruct(event); if (d != 0) { _Emscripten_SendDragEvent(data, d); _SDL_free(d); }
             };
-            target.addEventListener("dragover", SDL3.eventHandlerDropDragover);
+
+            target.addEventListener("dragover", window_data.eventHandlerDropDragover);
 
             SDL3.drop_count = 0;
 
@@ -1184,8 +1198,8 @@ static void Emscripten_set_drag_event_callbacks(SDL_WindowData *data)
                         const file_reader = new FileReader();
                         file_reader.readAsArrayBuffer(file);
                         file_reader.onload = function(event) {
-                            const fs_dropdir = `/tmp/filedrop/${SDL3.drop_count}`;
-                            SDL3.drop_count += 1;
+                            const fs_dropdir = `/tmp/filedrop/${id}/${window_data.drop_count}`;
+                            window_data.drop_count += 1;
 
                             const fs_filepath = `${fs_dropdir}/${file.name}`;
                             const c_fs_filepath = stringToNewUTF8(fs_filepath);
@@ -1217,14 +1231,14 @@ static void Emscripten_set_drag_event_callbacks(SDL_WindowData *data)
                 }
                 _Emscripten_SendDragCompleteEvent(data);
             };
-            target.addEventListener("drop", SDL3.eventHandlerDropDrop);
+            target.addEventListener("drop", window_data.eventHandlerDropDrop);
 
-            SDL3.eventHandlerDropDragend = function(event) {
+            window_data.eventHandlerDropDragend = function(event) {
                 event.preventDefault();
                 _Emscripten_SendDragCompleteEvent(data);
             };
-            target.addEventListener("dragend", SDL3.eventHandlerDropDragend);
-            target.addEventListener("dragleave", SDL3.eventHandlerDropDragend);
+            target.addEventListener("dragend", window_data.eventHandlerDropDragend);
+            target.addEventListener("dragleave", window_data.eventHandlerDropDragend);
         }
     }, data, data->canvas_id, sizeof (Emscripten_DropEvent));
 }
@@ -1232,14 +1246,29 @@ static void Emscripten_set_drag_event_callbacks(SDL_WindowData *data)
 static void Emscripten_unset_drag_event_callbacks(SDL_WindowData *data)
 {
     MAIN_THREAD_EM_ASM({
-        var target = document.querySelector(UTF8ToString($0));
+        var id = UTF8ToString($0);
+        var target = document.querySelector(id);
         if (target) {
             var SDL3 = Module['SDL3'];
-            target.removeEventListener("dragleave", SDL3.eventHandlerDropDragend);
-            target.removeEventListener("dragend", SDL3.eventHandlerDropDragend);
-            target.removeEventListener("drop", SDL3.eventHandlerDropDrop);
-            SDL3.drop_count = undefined;
+            var window_datas = SDL3['window_data'];
+            var window_data = window_datas[id];
+            target.removeEventListener("dragleave", window_data.eventHandlerDropDragend);
+            target.removeEventListener("dragend", window_data.eventHandlerDropDragend);
+            target.removeEventListener("drop", window_data.eventHandlerDropDrop);
+            window_data.drop_count = undefined;
 
+            function safeRemoveDir(path) {
+                try
+                {
+                    FS.rmdir(path);
+                }
+                catch(e)
+                {
+                    // Throws if directory doesn't exist
+                }
+            }
+
+            const path = `/tmp/filedrop/${id}/`;
             function recursive_remove(dirpath) {
                 FS.readdir(dirpath).forEach((filename) => {
                     const p = `${dirpath}/${filename}`;
@@ -1250,14 +1279,14 @@ static void Emscripten_unset_drag_event_callbacks(SDL_WindowData *data)
                         recursive_remove(p);
                     }
                 });
-                FS.rmdir(dirpath);
-            }("/tmp/filedrop");
+                safeRemoveDir(dirpath);
+            }(path);
 
-            FS.rmdir("/tmp/filedrop");
-            target.removeEventListener("dragover", SDL3.eventHandlerDropDragover);
-            SDL3.eventHandlerDropDragover = undefined;
-            SDL3.eventHandlerDropDrop = undefined;
-            SDL3.eventHandlerDropDragend = undefined;
+            safeRemoveDir(path);
+            target.removeEventListener("dragover", window_data.eventHandlerDropDragover);
+            window_data.eventHandlerDropDragover = undefined;
+            window_data.eventHandlerDropDrop = undefined;
+            window_data.eventHandlerDropDragend = undefined;
         }
     }, data->canvas_id);
 }
@@ -1319,6 +1348,10 @@ EMSCRIPTEN_KEEPALIVE void Emscripten_HandleLockKeysCheck(SDL_WindowData *window_
 void Emscripten_RegisterEventHandlers(SDL_WindowData *data)
 {
     const char *keyElement;
+
+    // emscripten_set_mousemove_callback(data->canvas_id, data, 0, Emscripten_HandleMouseMove);
+    // emscripten_set_mousedown_callback(data->canvas_id, data, 0, Emscripten_HandleMouseButton);
+    // emscripten_set_mouseenter_callback(data->canvas_id, data, 0, Emscripten_HandleMouseFocus);
 
     // There is only one window and that window is the canvas
     emscripten_set_wheel_callback(data->canvas_id, data, 0, Emscripten_HandleWheel);
