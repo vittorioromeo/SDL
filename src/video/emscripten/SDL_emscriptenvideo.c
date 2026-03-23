@@ -827,6 +827,9 @@ static bool Emscripten_CreateWindow(SDL_VideoDevice *_this, SDL_Window *window, 
     SDL_SetStringProperty(window->props, SDL_PROP_WINDOW_EMSCRIPTEN_CANVAS_ID_STRING, wdata->canvas_id);
     SDL_SetStringProperty(window->props, SDL_PROP_WINDOW_EMSCRIPTEN_KEYBOARD_ELEMENT_STRING, wdata->keyboard_element);
 
+    SDL_VideoData *videodata;
+    videodata = _this->internal;
+
     if (!SDL_SetBooleanProperty(videodata->window_map, wdata->canvas_id, true)) {
         return false;
     }
