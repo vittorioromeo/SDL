@@ -651,8 +651,11 @@ static bool Emscripten_SetWindowFillDocument(SDL_VideoDevice *_this, SDL_Window 
     emscripten_get_element_css_size(wdata->canvas_id, &css_w, &css_h);
 
     wdata->external_size = SDL_floor(css_w) != 1 || SDL_floor(css_h) != 1;
+
+    /*
     if (wdata->external_size) {
         wdata->fill_document = false;  // can't be resizable if something else is controlling it.
+    */
 
     if (fill && Emscripten_fill_document_window && (Emscripten_fill_document_window != window)) {
         return SDL_SetError("Only one fill-document window allowed at a time.");
@@ -1084,6 +1087,7 @@ static bool Emscripten_SyncWindow(SDL_VideoDevice *_this, SDL_Window *window)
 
     return true;
 }
+
 static bool Emscripten_SetWindowIcon(SDL_VideoDevice *_this, SDL_Window *window, SDL_Surface *icon)
 {
     // Create dynamic memory stream for PNG encoding
