@@ -35,6 +35,12 @@ bool Emscripten_CreateWindowFramebuffer(SDL_VideoDevice *_this, SDL_Window *wind
 
     // Free the old framebuffer surface
     SDL_WindowData *data = window->internal;
+
+    if (!data) {
+        // No framebuffer needed for this window
+        return true;
+    }
+
     surface = data->surface;
     SDL_DestroySurface(surface);
 
@@ -74,6 +80,10 @@ bool Emscripten_UpdateWindowFramebuffer(SDL_VideoDevice *_this, SDL_Window *wind
         var canvasId = UTF8ToString($3);
         var canvas = document.querySelector(canvasId);
 
+        if (!Module['SDL3']) {
+            Module['SDL3'] = {};
+        }
+
         //TODO: this should store a context per canvas
         var SDL3 = Module['SDL3'];
         if (SDL3.ctxCanvas !== canvas) {
@@ -83,13 +93,26 @@ bool Emscripten_UpdateWindowFramebuffer(SDL_VideoDevice *_this, SDL_Window *wind
             }
             SDL3.ctxCanvas = canvas;
         }
-        if (SDL3.w !== w || SDL3.h !== h || SDL3.imageCtx !== SDL3.ctx) {
-            SDL3.image = SDL3.ctx.createImageData(w, h);
-            SDL3.w = w;
-            SDL3.h = h;
-            SDL3.imageCtx = SDL3.ctx;
+
+        var window_datas = SDL3['window_data'];
+        if (!window_datas[canvasId]) {
+            window_datas[canvasId] = {};
         }
-        var data = SDL3.image.data;
+
+        var window_data = window_datas[canvasId];
+
+        if (window_data.canvas !== canvas) {
+            window_data.ctx = Module['createContext'](canvas, false, true);
+            window_data.canvas = canvas;
+        }
+
+        if (window_data.w !== w || window_data.h !== h) {
+            window_data.image = window_data.ctx.createImageData(w, h);
+            window_data.w = w;
+            window_data.h = h;
+        }
+
+        var data = window_data.image.data;
         var src = pixels / 4;
 
         if (SDL3.data32Data !== data) {
@@ -99,7 +122,7 @@ bool Emscripten_UpdateWindowFramebuffer(SDL_VideoDevice *_this, SDL_Window *wind
         var data32 = SDL3.data32;
         data32.set(HEAP32.subarray(src, src + data32.length));
 
-        SDL3.ctx.putImageData(SDL3.image, 0, 0);
+        window_data.ctx.putImageData(window_data.image, 0, 0);
         return true;
     }, surface->w, surface->h, surface->pixels, data->canvas_id);
     /* *INDENT-ON* */ // clang-format on
@@ -120,8 +143,10 @@ void Emscripten_DestroyWindowFramebuffer(SDL_VideoDevice *_this, SDL_Window *win
 {
     SDL_WindowData *data = window->internal;
 
-    SDL_DestroySurface(data->surface);
-    data->surface = NULL;
+    if (data) {
+        SDL_DestroySurface(data->surface);
+        data->surface = NULL;
+    }
 }
 
 #endif // SDL_VIDEO_DRIVER_EMSCRIPTEN

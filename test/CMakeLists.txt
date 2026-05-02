@@ -426,7 +426,7 @@ add_sdl_test_executable(testlocale NONINTERACTIVE SOURCES testlocale.c NAME83 lo
 add_sdl_test_executable(testlock SOURCES testlock.c NAME83 lock)
 add_sdl_test_executable(testrwlock SOURCES testrwlock.c NONINTERACTIVE NONINTERACTIVE_TIMEOUT 20 NAME83 rwlock)
 add_sdl_test_executable(testmouse SOURCES testmouse.c NAME83 mouse)
-
+add_sdl_test_executable(testmultiwindow SOURCES testmultiwindow.c)
 add_sdl_test_executable(testoverlay NEEDS_RESOURCES TESTUTILS SOURCES testoverlay.c NAME83 overlay)
 add_sdl_test_executable(testplatform NONINTERACTIVE SOURCES testplatform.c NAME83 platform)
 add_sdl_test_executable(testpower NONINTERACTIVE SOURCES testpower.c NAME83 power)
