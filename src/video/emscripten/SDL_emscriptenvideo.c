@@ -572,7 +572,7 @@ static bool Emscripten_SetWindowFillDocument(SDL_VideoDevice *_this, SDL_Window 
             try
             {
                 var id = UTF8ToString($0);
-                var rect = new Int32Array(Module.HEAP32.buffer, $1, 4);
+                var rect = new Int32Array(Module['HEAP32'].buffer, $1, 4);
                 var parent_id = UTF8ToString($2);
                 var canvas = document.querySelector(id);
                 if (canvas) {
@@ -1052,7 +1052,7 @@ static bool Emscripten_GetCanvasRect(const char *canvas_id, SDL_Rect *rect)
 {
     return MAIN_THREAD_EM_ASM_INT({
         var id = UTF8ToString($0);
-        var array = new Uint32Array(Module.HEAPU32.buffer, $1, 4);
+        var array = new Uint32Array(Module['HEAPU32'].buffer, $1, 4);
         try
         {
             let canvas = document.querySelector(id);
