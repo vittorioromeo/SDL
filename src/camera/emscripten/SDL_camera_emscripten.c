@@ -130,8 +130,8 @@ static bool EMSCRIPTENCAMERA_OpenDevice(SDL_Camera *device, const SDL_CameraSpec
         const h = $2;
         const framerate_numerator = $3;
         const framerate_denominator = $4;
-        const outcome = Module._SDLEmscriptenCameraPermissionOutcome;
-        const iterate = Module._SDLEmscriptenThreadIterate;
+        const outcome = Module['_SDLEmscriptenCameraPermissionOutcome'];
+        const iterate = Module['_SDLEmscriptenThreadIterate'];
 
         const constraints = {};
         if ((w <= 0) || (h <= 0)) {
