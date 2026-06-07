@@ -1374,15 +1374,18 @@ void Emscripten_RegisterEventHandlers(SDL_WindowData *data)
 
     keyElement = Emscripten_GetKeyboardTargetElement(data->keyboard_element);
     if (keyElement) {
-        // Emscripten's html5 helpers do not deduplicate addEventListener calls:
-        // see registerOrRemoveHandler in library_html5.js. If a previous SDL window
-        // already registered keyboard handlers on the same target, the new
-        // registration would *stack* a second listener, causing every browser
-        // keydown to fire Emscripten_HandleKey twice. The duplicate calls then
-        // produce two SDL_EVENT_KEY_DOWN events per physical keypress (the
-        // second one with repeat=true, courtesy of the keystate-based repeat
-        // detection in SDL_SendKeyboardKeyInternal). Clear any prior handler
-        // on this target before installing ours.
+        // Emscripten's HTML5 helpers do not deduplicate `addEventListener` calls:
+        // see `registerOrRemoveHandler` in `emscripten/src/lib/libhtml5.js`.
+        //
+        // If a previous SDL window already registered keyboard handlers on the same
+        // target, the new registration would *stack* a second listener, causing every
+        // browser keydown to fire `Emscripten_HandleKey` twice.
+        //
+        // The duplicate calls then produce two `SDL_EVENT_KEY_DOWN` events per physical
+        // keypress (the second one with `repeat=true`, due to the keystate-based repeat
+        // detection in `SDL_SendKeyboardKeyInternal`).
+        //
+        // We must clear any prior handler on this target before installing ours:
         emscripten_set_keydown_callback(keyElement, NULL, 0, NULL);
         emscripten_set_keyup_callback(keyElement, NULL, 0, NULL);
         emscripten_set_keypress_callback(keyElement, NULL, 0, NULL);
@@ -1392,12 +1395,12 @@ void Emscripten_RegisterEventHandlers(SDL_WindowData *data)
             // our keymod state can get confused in various ways (changed capslock when browser didn't have focus, etc), and you can't query the current
             //  state from the DOM, outside of a keyboard event, so catch keypresses globally and reset mod state if it's unexpectedly wrong. Best we can do.
             //  Note that this thing _only_ adjusts the lock keys if necessary; the real SDL keypress handling happens elsewhere.
-            // Remove any prior listener first — addEventListener does not
-            // deduplicate, so re-registering without unregistering would
-            // stack listeners and double-fire on every keydown.
+
+            // Remove any prior listener first -- `addEventListener` does not deduplicate either.
             if (document.sdlEventHandlerLockKeysCheck) {
                 document.removeEventListener("keydown", document.sdlEventHandlerLockKeysCheck);
             }
+
             document.sdlEventHandlerLockKeysCheck = function(event) {
                 // don't try to adjust the state on the actual lock key presses; the normal key handler will catch that and adjust.
                 if ((event.key != "CapsLock") && (event.key != "NumLock") && (event.key != "ScrollLock"))

@@ -397,26 +397,26 @@ static void ConfigureWindowGeometry(SDL_Window *window)
 
         if (data->viewport && data->waylandData->subcompositor && !data->is_fullscreen) {
             if (window->min_w) {
-                window_width = viewport_width = SDL_max(viewport_width, window->min_w);
+                viewport_width = SDL_max(viewport_width, window->min_w);
             }
             if (window->min_h) {
-                window_height = viewport_height = SDL_max(viewport_height, window->min_h);
+                viewport_height = SDL_max(viewport_height, window->min_h);
             }
             if (window->max_w) {
-                window_width = viewport_width = SDL_min(viewport_width, window->max_w);
+                viewport_width = SDL_min(viewport_width, window->max_w);
             }
             if (window->max_h) {
-                window_height = viewport_height = SDL_min(viewport_height, window->max_h);
+                viewport_height = SDL_min(viewport_height, window->max_h);
             }
 
             float aspect = (float)viewport_width / (float)viewport_height;
             if (window->min_aspect != 0.f && aspect < window->min_aspect) {
-                viewport_height = SDL_lroundf((float)viewport_width / window->min_aspect);
+                viewport_height = SDL_max(SDL_lroundf((float)viewport_width / window->min_aspect), 1);
             } else if (window->max_aspect != 0.f && aspect > window->max_aspect) {
-                viewport_width = SDL_lroundf((float)viewport_height * window->max_aspect);
+                viewport_width = SDL_max(SDL_lroundf((float)viewport_height * window->max_aspect), 1);
             }
 
-            // At this point, the viewport matches the window dimensions, but the viewport might be clamped to window dimensions beyond here.
+            // At this point, the viewport matches the virtual window dimensions, but the viewport might be clamped to the output window dimensions beyond here.
             window_width = viewport_width;
             window_height = viewport_height;
 
@@ -446,6 +446,9 @@ static void ConfigureWindowGeometry(SDL_Window *window)
                     }
                 }
             }
+
+            viewport_width = SDL_max(viewport_width, 1);
+            viewport_height = SDL_max(viewport_height, 1);
         } else {
             window_width = viewport_width;
             window_height = viewport_height;
@@ -540,14 +543,16 @@ static void ConfigureWindowGeometry(SDL_Window *window)
             SetSurfaceOpaqueRegion(data->mask.surface, 0, 0);
         }
 
-        data->mask.offset_x = -(data->current.logical_width - viewport_width) / 2;
-        data->mask.offset_y = -(data->current.logical_height - viewport_height) / 2;
-
         // Can't use an offset subsurface with libdecor (yet), or the decorations won't line up properly.
         if (data->shell_surface_type != WAYLAND_SHELL_SURFACE_TYPE_LIBDECOR) {
-            wl_subsurface_set_position(data->mask.subsurface, data->mask.offset_x, data->mask.offset_y);
+            data->mask.offset_x = -(data->current.logical_width - viewport_width) / 2;
+            data->mask.offset_y = -(data->current.logical_height - viewport_height) / 2;
+        } else {
+            data->mask.offset_x = 0;
+            data->mask.offset_y = 0;
         }
 
+        wl_subsurface_set_position(data->mask.subsurface, data->mask.offset_x, data->mask.offset_y);
         wl_surface_commit(data->mask.surface);
 
         if (old_buffer) {
@@ -1107,9 +1112,9 @@ static void handle_xdg_toplevel_configure(void *data,
                 const float aspect = (float)wind->requested.logical_width / (float)wind->requested.logical_height;
 
                 if (window->min_aspect != 0.f && aspect < window->min_aspect) {
-                    wind->requested.logical_height = SDL_lroundf((float)wind->requested.logical_width / window->min_aspect);
+                    wind->requested.logical_height = SDL_max(SDL_lroundf((float)wind->requested.logical_width / window->min_aspect), 1);
                 } else if (window->max_aspect != 0.f && aspect > window->max_aspect) {
-                    wind->requested.logical_width = SDL_lroundf((float)wind->requested.logical_height * window->max_aspect);
+                    wind->requested.logical_width = SDL_max(SDL_lroundf((float)wind->requested.logical_height * window->max_aspect), 1);
                 }
             } else {
                 if (window->max_w > 0) {
@@ -1126,9 +1131,9 @@ static void handle_xdg_toplevel_configure(void *data,
                 const float aspect = (float)wind->requested.pixel_width / (float)wind->requested.pixel_height;
 
                 if (window->min_aspect != 0.f && aspect < window->min_aspect) {
-                    wind->requested.pixel_height = SDL_lroundf((float)wind->requested.pixel_width / window->min_aspect);
+                    wind->requested.pixel_height = SDL_max(SDL_lroundf((float)wind->requested.pixel_width / window->min_aspect), 1);
                 } else if (window->max_aspect != 0.f && aspect > window->max_aspect) {
-                    wind->requested.pixel_width = SDL_lroundf((float)wind->requested.pixel_height * window->max_aspect);
+                    wind->requested.pixel_width = SDL_max(SDL_lroundf((float)wind->requested.pixel_height * window->max_aspect), 1);
                 }
 
                 wind->requested.logical_width = PixelToPoint(window, wind->requested.pixel_width);
@@ -1594,9 +1599,9 @@ static void decoration_frame_configure(struct libdecor_frame *frame,
                 const float aspect = (float)wind->requested.logical_width / (float)wind->requested.logical_height;
 
                 if (window->min_aspect != 0.f && aspect < window->min_aspect) {
-                    wind->requested.logical_height = SDL_lroundf((float)wind->requested.logical_width / window->min_aspect);
+                    wind->requested.logical_height = SDL_max(SDL_lroundf((float)wind->requested.logical_width / window->min_aspect), 1);
                 } else if (window->max_aspect != 0.f && aspect > window->max_aspect) {
-                    wind->requested.logical_width = SDL_lroundf((float)wind->requested.logical_height * window->max_aspect);
+                    wind->requested.logical_width = SDL_max(SDL_lroundf((float)wind->requested.logical_height * window->max_aspect), 1);
                 }
             } else {
                 if (window->max_w > 0) {
@@ -1613,9 +1618,9 @@ static void decoration_frame_configure(struct libdecor_frame *frame,
                 const float aspect = (float)wind->requested.pixel_width / (float)wind->requested.pixel_height;
 
                 if (window->min_aspect != 0.f && aspect < window->min_aspect) {
-                    wind->requested.pixel_height = SDL_lroundf((float)wind->requested.pixel_width / window->min_aspect);
+                    wind->requested.pixel_height = SDL_max(SDL_lroundf((float)wind->requested.pixel_width / window->min_aspect), 1);
                 } else if (window->max_aspect != 0.f && aspect > window->max_aspect) {
-                    wind->requested.pixel_width = SDL_lroundf((float)wind->requested.pixel_height * window->max_aspect);
+                    wind->requested.pixel_width = SDL_max(SDL_lroundf((float)wind->requested.pixel_height * window->max_aspect), 1);
                 }
 
                 wind->requested.logical_width = PixelToPoint(window, wind->requested.pixel_width);
@@ -2299,7 +2304,7 @@ void Wayland_ShowWindow(SDL_VideoDevice *_this, SDL_Window *window)
         wl_surface_commit(data->surface);
     }
 
-    // Make sure the window can't be resized to 0 or it can be spuriously closed by the window manager.
+    // Make sure the window can't be resized to 0, or it can be spuriously closed by the window manager.
     data->system_limits.min_width = SDL_max(data->system_limits.min_width, 1);
     data->system_limits.min_height = SDL_max(data->system_limits.min_height, 1);
 
@@ -2342,6 +2347,13 @@ void Wayland_ShowWindow(SDL_VideoDevice *_this, SDL_Window *window)
         }
     }
 
+    // No frame callback on an external surface, as it may already have one attached.
+    if (!(window->flags & SDL_WINDOW_EXTERNAL)) {
+        // Fire a callback when the compositor wants a new frame.
+        data->surface_frame_callback = wl_surface_frame(data->surface);
+        wl_callback_add_listener(data->surface_frame_callback, &surface_frame_listener, data);
+    }
+
     data->show_hide_sync_required = true;
     struct wl_callback *cb = wl_display_sync(_this->internal->display);
     wl_callback_add_listener(cb, &show_hide_sync_listener, (void *)((uintptr_t)window->id));
@@ -2351,9 +2363,7 @@ void Wayland_ShowWindow(SDL_VideoDevice *_this, SDL_Window *window)
     data->showing_window = false;
 
     // Send an exposure event to signal that the client should draw.
-    if (data->shell_surface_status == WAYLAND_SHELL_SURFACE_STATUS_WAITING_FOR_FRAME) {
-        SDL_SendWindowEvent(window, SDL_EVENT_WINDOW_EXPOSED, 0, 0);
-    }
+    SDL_SendWindowEvent(window, SDL_EVENT_WINDOW_EXPOSED, 0, 0);
 }
 
 static void Wayland_ReleasePopup(SDL_VideoDevice *_this, SDL_Window *popup)
@@ -2409,6 +2419,11 @@ void Wayland_HideWindow(SDL_VideoDevice *_this, SDL_Window *window)
     }
 
     wind->shell_surface_status = WAYLAND_SHELL_SURFACE_STATUS_HIDDEN;
+
+    if (wind->surface_frame_callback) {
+        wl_callback_destroy(wind->surface_frame_callback);
+        wind->surface_frame_callback = NULL;
+    }
 
     if (wind->server_decoration) {
         zxdg_toplevel_decoration_v1_destroy(wind->server_decoration);
@@ -2988,13 +3003,6 @@ bool Wayland_CreateWindow(SDL_VideoDevice *_this, SDL_Window *window, SDL_Proper
         wl_callback_add_listener(data->gles_swap_frame_callback, &gles_swap_frame_listener, data);
     }
 
-    // No frame callback on external surfaces as it may already have one attached.
-    if (!external_surface) {
-        // Fire a callback when the compositor wants a new frame to set the surface damage region.
-        data->surface_frame_callback = wl_surface_frame(data->surface);
-        wl_callback_add_listener(data->surface_frame_callback, &surface_frame_listener, data);
-    }
-
     if (window->flags & SDL_WINDOW_TRANSPARENT) {
         if (_this->gl_config.alpha_size == 0) {
             _this->gl_config.alpha_size = 8;
@@ -3420,6 +3428,11 @@ bool Wayland_SyncWindow(SDL_VideoDevice *_this, SDL_Window *window)
     return true;
 }
 
+void Wayland_AcceptDragAndDrop(SDL_Window *window, bool accept)
+{
+    window->internal->accepts_drag_and_drop = accept;
+}
+
 bool Wayland_SetWindowFocusable(SDL_VideoDevice *_this, SDL_Window *window, bool focusable)
 {
     if (window->flags & SDL_WINDOW_POPUP_MENU) {
@@ -3584,10 +3597,6 @@ void Wayland_DestroyWindow(SDL_VideoDevice *_this, SDL_Window *window)
             wl_callback_destroy(wind->gles_swap_frame_callback);
             WAYLAND_wl_proxy_wrapper_destroy(wind->gles_swap_frame_surface_wrapper);
             WAYLAND_wl_event_queue_destroy(wind->gles_swap_frame_event_queue);
-        }
-
-        if (wind->surface_frame_callback) {
-            wl_callback_destroy(wind->surface_frame_callback);
         }
 
         if (!(window->flags & SDL_WINDOW_EXTERNAL)) {

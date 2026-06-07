@@ -28,6 +28,11 @@ jobs:
         with:
           msystem: ${{ matrix.platform.msys2-msystem }}
           install: ${{ matrix.platform.msys2-packages }}
+      - name: 'Set up Cygwin'
+        if: ${{ matrix.platform.platform == 'cygwin' }}
+        uses: cygwin/cygwin-install-action@master
+        with:
+          packages: ${{ matrix.platform.cygwin-packages }}
       - name: 'About this job'
         run: |
           echo "key=${{ matrix.platform.key }}"
@@ -81,7 +86,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-      - uses: ilammy/msvc-dev-cmd@v1
+      - uses: TheMrMilchmann/setup-msvc-dev@v4
         if: ${{ matrix.platform.platform == 'msvc' }}
         with:
           arch: ${{ matrix.platform.msvc-vcvars-arch }}
@@ -167,6 +172,14 @@ jobs:
               echo '#error "System SDL headers must not be used by build system"' >"$dest"
             done
           done
+      - name: 'Set up Microsoft.GameInput headers'
+        if: ${{ matrix.platform.microsoft-gameinput-version != '' }}
+        run: |
+          python build-scripts/download-gameinput-headers.py \
+            --version ${{ matrix.platform.microsoft-gameinput-version }} \
+            -o $HOME/gameinput
+          echo "GAMEINPUT_INCLUDE=$(cygpath -w "$HOME/gameinput")" >>$GITHUB_ENV
+          echo "INCLUDE=$INCLUDE;$(cygpath -w "$HOME/gameinput")" >>$GITHUB_ENV
 
       - name: 'Calculate ccache key'
         if: ${{ matrix.platform.ccache }}
@@ -323,7 +336,7 @@ jobs:
       - name: 'Build (cross-platform-actions, BSD)'
         id: cpactions
         if: ${{ matrix.platform.cpactions }}
-        uses: cross-platform-actions/action@v0.32.0
+        uses: cross-platform-actions/action@v1
         with:
           operating_system: '${{ matrix.platform.cpactions-os }}'
           architecture: '${{ matrix.platform.cpactions-arch }}'
@@ -418,6 +431,7 @@ jobs:
           find ./ -iname '*.so' | xargs -L1 ./build-scripts/check_elf_alignment.sh
       - name: 'Upload binary package'
         uses: actions/upload-artifact@v7
+        continue-on-error: true
         if: ${{ always() && matrix.platform.artifact != '' && (steps.package.outcome == 'success' || steps.cpactions.outcome == 'success') && (matrix.platform.enable-artifacts || steps.tests.outcome == 'failure') }}
         with:
           if-no-files-found: error
@@ -427,6 +441,7 @@ jobs:
             build/include*
       - name: 'Upload minidumps'
         uses: actions/upload-artifact@v7
+        continue-on-error: true
         if: ${{ always() && steps.tests.outcome == 'failure' && (matrix.platform.platform == 'msvc' || matrix.platform.platform == 'msys2') }}
         with:
           if-no-files-found: ignore
@@ -434,6 +449,7 @@ jobs:
           path: build/**/*.dmp
       - name: "Upload Android test apk's"
         uses: actions/upload-artifact@v7
+        continue-on-error: true
         if: ${{ matrix.platform.enable-artifacts && always() && matrix.platform.artifact != '' && steps.apks.outcome == 'success' }}
         with:
           if-no-files-found: error
